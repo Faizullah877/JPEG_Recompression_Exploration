@@ -1,0 +1,54 @@
+clc
+clear all
+
+jpegExeDir = 'FlikerTest_GUI\libjpegturbo';
+origBmpFile = 'kodim24_q45.bmp';
+
+jpg_encoder = fullfile(jpegExeDir, "cjpeg.exe");
+
+% q = 45;
+% jpeg_file = ['kodim24_q' num2str(q) '.jpg'];
+% decoded_bmp = ['kodim24_q' num2str(q) '.bmp'];
+% jpg_cmd = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, q, jpeg_file, origBmpFile);
+% system(jpg_cmd);
+% jpg_decoder = fullfile(jpegExeDir, "djpeg.exe");
+% de_jpg_cmd = sprintf("%s -outfile %s %s", jpg_decoder, decoded_bmp, jpeg_file);
+% system(de_jpg_cmd);
+
+
+qualityFactor = 10:10:100;
+n = length(qualityFactor); % number  of quality_factors values
+
+ssimValues = zeros(1,n);
+psnrValues = zeros(1,n);
+bppValues = zeros(1,n);
+msssimValues = zeros(1,n);
+
+Orig = imread('kodim24.bmp');
+[rows, cols] = size(Orig);
+
+for Q = 1:n
+    q = qualityFactor(Q);
+    jpeg_file = ['kodim24_q45_q' num2str(q) '.jpg'];
+    decoded_bmp = ['kodim24_q45_q' num2str(q) '.bmp'];
+    jpg_cmd = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, q, jpeg_file, origBmpFile);
+    system(jpg_cmd);
+    jpg_decoder = fullfile(jpegExeDir, "djpeg.exe");
+    de_jpg_cmd = sprintf("%s -outfile %s %s", jpg_decoder, decoded_bmp, jpeg_file);
+    system(de_jpg_cmd);
+    rec = imread(decoded_bmp);
+    s = dir(jpeg_file);
+    bppValues(1,Q) = (s.bytes*8)/(rows*cols);        
+    psnrValues(1,Q) = psnr(rec, Orig);
+    ssimValues(1,Q) = ssim(rec, Orig);
+    msssimValues(1,Q) = mean(squeeze(multissim(rec, Orig)));
+    delete(jpeg_file);
+    delete(decoded_bmp);
+end
+
+Q45_ResultsGT = struct();
+Q45_ResultsGT.bppv = bppValues;
+Q45_ResultsGT.psnrv = psnrValues;
+Q45_ResultsGT.ssimv = ssimValues;
+Q45_ResultsGT.msssimv = msssimValues;
+save('Q45_Results_kodim24_GT.mat', 'Q45_ResultsGT');

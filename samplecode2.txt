@@ -1,0 +1,95 @@
+clc
+clear all
+
+images_dir = '../jpegai_test_images/*.png';
+
+jpeg_exe_dir = '../libjpegturbo';
+jpeg_output_dir = '../jpeg_compressed';
+jpeg_decoded_dir = '../jpeg_decompressed';
+
+images_list = dir(images_dir);
+mn = length(images_list); % number of images
+
+qualityFactor = 10:10:100;
+n = length(qualityFactor); % number  of quality_factors values
+
+ssimValues = zeros(mn, 1,n);
+psnrValues = zeros(mn,1,n);
+bppValues = zeros(mn,1,n);
+msssimValues = zeros(mn,1,n);
+
+for image = 1: mn
+    for Q = 1: n
+      
+        q = qualityFactor(Q);
+        input_fname = images_list(image).name;
+        file_bname = images_list(image).name(1:(length(images_list(image).name)-4));
+        jpeg_fname = [file_bname '_q' num2str(q) '.jpg'];
+        decoded_fname = [file_bname '_q' num2str(q) '.png'];
+        % system(fullfile(jpeg_exe_dir, 'cjpeg.exe'), fullfile(images_list(image).folder, input_fname), fullfile(jpeg_output_dir, jpeg_fname))
+        input = imread(fullfile(images_list(image).folder, input_fname));
+        imwrite(input, fullfile(jpeg_output_dir, jpeg_fname), 'Quality', q);
+        s = dir(fullfile(jpeg_output_dir, jpeg_fname));
+        [rows, cols] = size(input);
+        bppValues(image,1,Q) = (s.bytes*8)/(rows*cols);
+
+        decoded = imread(fullfile(jpeg_output_dir, jpeg_fname));
+        imwrite(decoded, fullfile(jpeg_decoded_dir, decoded_fname));
+
+        psnrValues(image,1,Q) = psnr(decoded, input);
+        ssimValues(image,1,Q) = ssim(decoded, input);
+%         mssim_score = mul
+        msssimValues(image,1,Q) = mean(squeeze(multissim(decoded, input)));
+        disp(['Image : ' num2str(image) ' Q : ' num2str(q)  ...
+            '  bpp  =>' bppValues(image, 1, Q) '   psnr => ' num2str(psnrValues(image,1,Q)) '  ssim =>  ' num2str(ssimValues(image,1,Q))])
+    end
+end
+
+
+hold on
+lgends = strings(1,mn);
+for k =1:mn
+    lgends(k)= images_list(k).name;
+end
+markers = {'-o', '-+', '-*', '-..', '-x',':s', '--d', ':^', '-v', '-->', ':<','-p','-h', '--o', ':+', '-.*'};
+for i = 1:mn
+    bpp = squeeze(bppValues(i, 1,:));
+    plot(qualityFactor, bpp, markers{i})
+%     legend(lgends(i))
+end
+leg = legend(lgends);
+set(leg, 'Interpreter', 'none')
+hold off
+
+figure(2)
+hold on
+for i = 1:mn
+    bpp = squeeze(psnrValues(i, 1,:));
+    plot(qualityFactor, bpp, markers{i})
+%     legend(lgends(i))
+end
+leg = legend(lgends);
+set(leg, 'Interpreter', 'none')
+hold off
+
+figure(3)
+hold on
+for i = 1:mn
+    bpp = squeeze(ssimValues(i, 1,:));
+    plot(qualityFactor, bpp, markers{i})
+%     legend(lgends(i))
+end
+leg = legend(lgends);
+set(leg, 'Interpreter', 'none')
+hold off
+
+figure(4)
+hold on
+for i = 1:mn
+    bpp = squeeze(msssimValues(i, 1,:));
+    plot(qualityFactor, bpp, markers{i})
+%     legend(lgends(i))
+end
+leg = legend(lgends);
+set(leg, 'Interpreter', 'none')
+hold off
