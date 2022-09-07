@@ -5,107 +5,114 @@ testImagesDir = 'KodakTest_Images\BMPs';
 jpegExeDir = 'libjpegturbo';
 outputDir = 'temp_dir';
 
-test_image = 'kodim02.bmp';
+test_image = 'kodim23.bmp';
 origBmpFile = fullfile(testImagesDir, test_image);
 imageName  = test_image(1:(length(test_image)-4));
 
-L1Qvalues = 70:10:100;
-m = length(L1Qvalues);
+XY_Qvalues = 60:10:100;
+m = length(XY_Qvalues);
 
-qualityFactor = 30:10:100;
-n = length(qualityFactor); % number  of quality_factors values
+YZ_Qvalues = 30:5:100;
+n = length(YZ_Qvalues); % number  of quality_factors values
 
-ssimL1 = zeros(1,n);
-psnrL1 = zeros(1,n);
-bppL1 = zeros(1,n);
-msssimL1 = zeros(1,n);
+
+bppXY = zeros(1,m);
+ssimXY = zeros(1,m);
+psnrXY = zeros(1,m);
+msssimXY = zeros(1,m);
 
 bppL2 = zeros(m, 1,n);
-ssimGT = zeros(m, 1,n);
-psnrGT = zeros(m, 1,n);
-msssimGT = zeros(m,1,n);
+ssimXZ = zeros(m, 1,n);
+psnrXZ = zeros(m, 1,n);
+msssimXZ = zeros(m,1,n);
 
-ssimRC = zeros(m, 1,n);
-psnrRC = zeros(m, 1,n);
-msssimRC = zeros(m, 1,n);
-GT_img = imread(fullfile(testImagesDir, test_image));
-[rows, cols] = size(GT_img);
+ssimYZ = zeros(m, 1,n);
+psnrYZ = zeros(m, 1,n);
+msssimYZ = zeros(m, 1,n);
+X_raw = imread(fullfile(testImagesDir, test_image));
+[rows, cols] = size(X_raw);
 
 
 jpg_encoder = fullfile(jpegExeDir, "cjpeg.exe");
 jpg_decoder = fullfile(jpegExeDir, "djpeg.exe");
 
 
-legendsGT = strings(1,n);
-legendsRC = strings(1,n);
+legendsXZ = strings(1,n);
+legendsYZ = strings(1,n);
 
-markers = {'-o', '-+', '-*', '-..', '-x',':s', '--d', ':^', '-v', '-->', ':<','-p','-h', '--o', ':+', '-.*'};
+markersXZ = {'-o', '-+', '-*', '-s', '-x', '-d', ':^', '-v', '-->', ':<','-p','-h', '--o', ':+', '-.*'};
+markersYZ = {':o', ':+', ':*', ':s', ':x', ':d', ':^', '-v', '-->', ':<','-p','-h', '--o', ':+', '-.*'};
 figure(1)
 hold on
-for QL1 = 1:m
-    L1q = L1Qvalues(QL1);
-    L1_jpeg_file = fullfile(outputDir, [imageName '_L1q' num2str(L1q) '.jpg']);
-    L1_decoded_bmp = fullfile(outputDir, [imageName '_L1q' num2str(L1q) '.bmp']);
-    jpg_cmd = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, L1q, L1_jpeg_file, origBmpFile);
+for xy = 1:m
+    XYq = XY_Qvalues(xy);
+    L1_jpeg_file = fullfile(outputDir, [imageName '_XYq' num2str(XYq) '.jpg']);
+    L1_decoded_bmp = fullfile(outputDir, [imageName '_XYq' num2str(XYq) '.bmp']);
+    jpg_cmd = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, XYq, L1_jpeg_file, origBmpFile);
     system(jpg_cmd);
     de_jpg_cmd = sprintf("%s -outfile %s %s", jpg_decoder, L1_decoded_bmp, L1_jpeg_file);
     system(de_jpg_cmd);
-    L1_recImg = imread(L1_decoded_bmp);
+    Y_raw = imread(L1_decoded_bmp);
     sL1 = dir(L1_jpeg_file);
-    bppL1(1,QL1) = (sL1.bytes*8)/(rows*cols);
-    psnrL1(1,QL1) = psnr(L1_recImg, GT_img);
-    ssimL1(1,QL1) = ssim(L1_recImg, GT_img);
-    msssimL1(1,QL1) = mean(squeeze(multissim(L1_recImg, GT_img)));
+    bppXY(1,xy) = (sL1.bytes*8)/(rows*cols);
+    psnrXY(1,xy) = psnr(Y_raw, X_raw);
+    ssimXY(1,xy) = ssim(Y_raw, X_raw);
+    msssimXY(1,xy) = mean(squeeze(multissim(Y_raw, X_raw)));
     disp([...
         'Image : ' imageName ...
-        '    L1Q => ' num2str(L1q)  ...
-        '    bpp  =>' num2str(bppL1(1,QL1))  ...
-        '    psnr => ' num2str( psnrL1(1,QL1)) ...
-        '    ssim =>  ' num2str(msssimL1(1,QL1))])
+        '    L1Q => ' num2str(XYq)  ...
+        '    bpp  =>' num2str(bppXY(1,xy))  ...
+        '    psnr => ' num2str( psnrXY(1,xy)) ...
+        '    ssim =>  ' num2str(msssimXY(1,xy))])
     
-    for QL2 = 1:n
-        L2q = qualityFactor(QL2);
-        L2_jpeg_file = fullfile(outputDir, [imageName '_L1q' num2str(L1q) '_L2q' num2str(L2q) '.jpg']);
-        L2_decoded_bmp = fullfile(outputDir, [imageName '_L1q' num2str(L1q) '_L2q' num2str(L2q) '.bmp']);
-        jpg_cmd_L2 = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, L2q, L2_jpeg_file, L1_decoded_bmp);
+    for yz = 1:n
+        YZq = YZ_Qvalues(yz);
+        L2_jpeg_file = fullfile(outputDir, [imageName '_XYq' num2str(XYq) '_YZq' num2str(YZq) '.jpg']);
+        L2_decoded_bmp = fullfile(outputDir, [imageName '_XYq' num2str(XYq) '_YZq' num2str(YZq) '.bmp']);
+        jpg_cmd_L2 = sprintf("%s -quality %d -outfile %s %s", jpg_encoder, YZq, L2_jpeg_file, L1_decoded_bmp);
         system(jpg_cmd_L2);
         de_jpg_cmd_L2 = sprintf("%s -outfile %s %s", jpg_decoder, L2_decoded_bmp, L2_jpeg_file);
         system(de_jpg_cmd_L2);
         
-        L2_recImg = imread(L2_decoded_bmp);
+        Z_raw = imread(L2_decoded_bmp);
         sL1 = dir(L2_jpeg_file);
-        bppL2(QL1, 1,QL2) = (sL1.bytes*8)/(rows*cols);
+        bppL2(xy, 1,yz) = (sL1.bytes*8)/(rows*cols);
         
-        psnrGT(QL1, 1,QL2) = psnr(L2_recImg, GT_img);
-        ssimGT(QL1, 1,QL2) = ssim(L2_recImg, GT_img);
-        msssimGT(QL1, 1,QL2) = mean(squeeze(multissim(L2_recImg, GT_img)));
+        psnrXZ(xy, 1,yz) = psnr(Z_raw, X_raw);
+        ssimXZ(xy, 1,yz) = ssim(Z_raw, X_raw);
+        msssimXZ(xy, 1,yz) = mean(squeeze(multissim(Z_raw, X_raw)));
         
-        psnrRC(QL1, 1,QL2) = psnr(L2_recImg, L1_recImg);
-        ssimRC(QL1, 1,QL2) = ssim(L2_recImg, L1_recImg);
-        msssimRC(QL1, 1,QL2) = mean(squeeze(multissim(L2_recImg, L1_recImg)));
+        psnrYZ(xy, 1,yz) = psnr(Z_raw, Y_raw);
+        ssimYZ(xy, 1,yz) = ssim(Z_raw, Y_raw);
+        msssimYZ(xy, 1,yz) = mean(squeeze(multissim(Z_raw, Y_raw)));
         disp([...
             'Image : ' imageName ...
-            '    L2Q => ' num2str(L2q)  ...
-            '    bpp  =>' num2str(bppL2(1,QL2))  ...
-            '    psnrGT => ' num2str( psnrGT(QL1, 1,QL2)) ...
-            '    msssimGT =>  ' num2str(msssimGT(QL1, 1,QL2))...
-            '    psnrRC =>  ' num2str(psnrRC(QL1, 1, QL2)) ...
-            '    ms-ssimRC =>  ' num2str(msssimRC(QL1, 1, QL2)) ...
+            '    Y-Z Q  => ' num2str(YZq)  ...
+            '    bpp  =>' num2str(bppL2(1,yz))  ...
+            '    psnr-X-Z => ' num2str( psnrXZ(xy, 1,yz)) ...
+            '    msssim-X-Z =>  ' num2str(msssimXZ(xy, 1,yz))...
+            '    psnr-X-Y =>  ' num2str(psnrYZ(xy, 1, yz)) ...
+            '    ms-ssim-X- =>  ' num2str(msssimYZ(xy, 1, yz)) ...
             ])
     end
-    legendsGT = [imageName '-recQ' num2str(L1q) '-GT'];
-    legendsRC = [imageName '-recQ' num2str(L1q) '-rec'];
+    legendsXZ = ['X-Z--XYq' num2str(XYq)];
+    legendsYZ = ['Y-Z -XYq' num2str(XYq)];
     
-    bpp = squeeze(bppL2(QL1,1,:));
-    psnrGTa = squeeze(psnrGT(QL1,1,:));
-    psnrRCa = squeeze(psnrRC(QL1,1,:));
-    plot(bpp, psnrGTa, markers{QL1}, 'DisplayName',legendsGT)
-    plot(bpp, psnrRCa, markers{QL1}, 'DisplayName',legendsRC)
-%     set(leg, 'Interpreter', 'none')
+    bpp = squeeze(bppL2(xy,1,:));
+    psnrXYp = squeeze(psnrXZ(xy,1,:));
+    psnrYZp = squeeze(psnrYZ(xy,1,:));
+    plot(bpp, psnrXYp, markersYZ{xy},'MarkerSize',8, 'LineWidth',2, 'DisplayName',legendsXZ)
+    plot(bpp, psnrYZp, markersXZ{xy}, 'MarkerSize',8, 'LineWidth',2, 'DisplayName',legendsYZ)
 end
-bpp = squeeze(bppL1);
-psnrGTa = squeeze(psnrGT(QL1,1,:));
-psnrRCa = squeeze(psnrRC(QL1,1,:));
-plot(bpp, psnrGTa, markers{QL1}, 'DisplayName',legendsGT)
+bppXYp = squeeze(bppXY);
+psnrXYp = squeeze(psnrXY);
+plot(bppXYp, psnrXYp, '-p' ,'MarkerSize',8, 'LineWidth',2, 'DisplayName','X-Y')
+
+legend
+grid on
+grid minor
+title(imageName)
+xlabel('bpp','FontSize',14,'FontWeight','bold')
+ylabel('psnr (dB)', 'FontSize',14,'FontWeight','bold')
 hold off
 
